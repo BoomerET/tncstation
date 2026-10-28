@@ -28,6 +28,9 @@
   }).addTo(map);
 
   var markers = {};
+  // Live trails and their position dots live in trackLayer, which the
+  // "Show Tracks" checkbox takes off the map (see showTracks below).
+  var trackLayer = L.layerGroup();
   var trails = {};
   var trailPoints = {};
   // Ring around stations heard direct (no digipeater in between).
@@ -383,6 +386,43 @@
     });
   });
 
+  // -- Show / hide tracks ---------------------------------------------
+  //
+  // Hides every track: the live trails, their position dots, and the
+  // longer tracks from the history database (renderHistory()). Stations
+  // stay. Remembered per browser, like Show Objects / Temperatures.
+
+  var showTracks = document.getElementById("showTracks");
+
+  try {
+    var savedTracks = window.localStorage.getItem("kamxl.map.showTracks");
+    if (savedTracks !== null) showTracks.checked = savedTracks === "1";
+  } catch (e) { /* storage unavailable: default on */ }
+
+  function applyShowTracks() {
+    if (showTracks.checked) {
+      trackLayer.addTo(map);
+      // Underneath everything else drawn on the map, as when first drawn.
+      Object.keys(trails).forEach(function (callsign) {
+        trails[callsign].bringToBack();
+      });
+    } else {
+      map.removeLayer(trackLayer);
+    }
+  }
+
+  applyShowTracks();
+
+  showTracks.addEventListener("change", function () {
+    try {
+      window.localStorage.setItem(
+        "kamxl.map.showTracks", showTracks.checked ? "1" : "0"
+      );
+    } catch (e) {}
+    applyShowTracks();
+    renderHistory();
+  });
+
   // -- Messaging a station from the map --------------------------------
 
   function messageUrl(callsign) {
@@ -700,7 +740,7 @@
 
 
       if (current) {
-        map.removeLayer(current);
+        trackLayer.removeLayer(current);
       }
 
       var timestamp = new Date(point.timestamp * 1000);
@@ -738,19 +778,19 @@
         marker.setRadius(5);
       });
 
-      marker.addTo(map);
+      marker.addTo(trackLayer);
       existing[index] = marker;
     });
 
     // Remove markers no longer present in the history.
     while (existing.length > history.length) {
-      map.removeLayer(existing.pop());
+      trackLayer.removeLayer(existing.pop());
     }
 
     // Don't show historical circles for a single position.
     if (history.length < 2) {
       existing.forEach(function (marker) {
-        map.removeLayer(marker);
+        trackLayer.removeLayer(marker);
       });
       trailPoints[callsign] = [];
     }
@@ -913,13 +953,13 @@
               weight: 3,
               opacity: 0.75,
               interactive: false
-            }).addTo(map);
+            }).addTo(trackLayer);
 
             // Keep the trail underneath station markers.
             trails[station.callsign].bringToBack();
           }
         } else if (trails[station.callsign]) {
-          map.removeLayer(trails[station.callsign]);
+          trackLayer.removeLayer(trails[station.callsign]);
           delete trails[station.callsign];
         }
 
@@ -943,7 +983,7 @@
       // Remove trails belonging to expired stations.
       Object.keys(trails).forEach(function (callsign) {
         if (!seen[callsign]) {
-          map.removeLayer(trails[callsign]);
+          trackLayer.removeLayer(trails[callsign]);
           delete trails[callsign];
         }
       });
@@ -952,7 +992,7 @@
       Object.keys(trailPoints).forEach(function (callsign) {
         if (!seen[callsign]) {
           trailPoints[callsign].forEach(function (marker) {
-            map.removeLayer(marker);
+            trackLayer.removeLayer(marker);
           });
           delete trailPoints[callsign];
         }
@@ -1037,7 +1077,7 @@
     if (Number(trackPeriod.value) <= 1) return;
     historyData.forEach(function (s) {
       if (directOnly.checked && s.last_direct == null) return;
-      if (s.track.length >= 2) {
+      if (showTracks.checked && s.track.length >= 2) {
         var line = L.polyline(s.track.map(function (p) { return [p[0], p[1]]; }), {
           color: "#3388ff", weight: 2, opacity: 0.45, interactive: false
         }).addTo(historyLayer);

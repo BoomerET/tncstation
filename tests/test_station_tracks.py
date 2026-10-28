@@ -121,5 +121,28 @@ class TrackRestTests(RestTestCase):
             self.assertIn(marker, page)
 
 
+class ShowTracksToggleTests(unittest.TestCase):
+    """The map's "Show Tracks" checkbox hides every track, keeps stations."""
+
+    def setUp(self):
+        self.page = tncstation_web.load_page("map")
+
+    def test_checkbox_on_by_default_and_remembered(self):
+        self.assertIn('<input type="checkbox" id="showTracks" checked>', self.page)
+        self.assertIn('"kamxl.map.showTracks"', self.page)
+
+    def test_live_trails_and_points_go_in_the_track_layer(self):
+        # Anything track-related added straight to the map would ignore
+        # the checkbox.
+        self.assertIn("}).addTo(trackLayer);", self.page)       # trails
+        self.assertIn("marker.addTo(trackLayer);", self.page)   # position dots
+        self.assertNotIn("map.removeLayer(trails[", self.page)
+        self.assertNotIn("map.removeLayer(current)", self.page)
+        self.assertIn("map.removeLayer(trackLayer)", self.page)
+
+    def test_longer_tracks_follow_it(self):
+        self.assertIn("if (showTracks.checked && s.track.length >= 2) {", self.page)
+
+
 if __name__ == "__main__":
     unittest.main()
