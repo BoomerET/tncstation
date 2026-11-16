@@ -11,9 +11,8 @@ class APRSTransmitError(ValueError):
 # The AX.25 destination ("tocall") on everything this station sends.
 # APRS software is meant to identify itself here with a registered
 # identifier (https://github.com/aprsorg/aprs-deviceid); a bare "APRS"
-# is obsolete. Until tncstation has its own, this is from the APZ range
-# the registry reserves for experimental software.
-DEFAULT_TOCALL = "APZTNC"
+# is obsolete. APTNCS is tncstation's registered identifier.
+DEFAULT_TOCALL = "APTNCS"
 
 
 def validate_tocall(value) -> str:

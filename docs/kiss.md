@@ -101,9 +101,8 @@ path -- before anything is written.
 APRS software identifies itself in the AX.25 destination field with an
 identifier from the [aprs-deviceid](https://github.com/aprsorg/aprs-deviceid)
 registry; a bare `APRS` is obsolete (Direwolf points it out on every
-packet). tncstation uses `TNCSTATION_TOCALL`, default `APZTNC` -- from
-the `APZ` range the registry sets aside for software in development,
-checked unallocated -- until it has its own identifier. The same
+packet). tncstation uses `TNCSTATION_TOCALL`, default `APTNCS` --
+tncstation's registered identifier in that registry. The same
 setting applies to Terminal Mode, where it becomes the `UNPROTO`
 destination. Set `TNCSTATION_TOCALL=APRS` for the old behavior.
 

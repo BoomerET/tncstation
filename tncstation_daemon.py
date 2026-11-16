@@ -3435,8 +3435,8 @@ def main(argv: Optional[list] = None) -> None:
         default=os.environ.get("TNCSTATION_TOCALL") or None,
         help=(
             "AX.25 destination (\"tocall\") on everything sent: identifies "
-            "the software (default: $TNCSTATION_TOCALL, or APZTNC, an "
-            "experimental-range identifier until tncstation has its own)"
+            "the software (default: $TNCSTATION_TOCALL, or APTNCS, "
+            "tncstation's registered identifier)"
         ),
     )
     parser.add_argument(

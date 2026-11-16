@@ -32,51 +32,50 @@ from tncstation_daemon import KAMDaemon
 
 class TocallTests(unittest.TestCase):
 
-    def test_default_is_an_experimental_range_identifier(self):
-        self.assertEqual(DEFAULT_TOCALL, "APZTNC")
-        self.assertTrue(DEFAULT_TOCALL.startswith("APZ"))
+    def test_default_is_the_registered_identifier(self):
+        self.assertEqual(DEFAULT_TOCALL, "APTNCS")
 
     def test_validation(self):
-        self.assertEqual(validate_tocall(" apztnc "), "APZTNC")
+        self.assertEqual(validate_tocall(" aptncs "), "APTNCS")
         self.assertEqual(validate_tocall("APRS"), "APRS")
-        for bad in ("", "APZTNC1", "APZ-1", "AP ZT", None):
+        for bad in ("", "APTNCS1", "APZ-1", "AP ZT", None):
             with self.subTest(bad=bad), self.assertRaises(APRSTransmitError):
                 validate_tocall(bad)
 
     def test_plan_uses_the_tocall(self):
-        plan = build_aprs_tx_plan(":W5ABC    :hi", "CQ/CQ", "WIDE1-1", "APZTNC")
-        self.assertEqual(plan[0], "UNPROTO APZTNC VIA WIDE1-1")
-        self.assertEqual(build_aprs_tx_plan(":W5ABC    :hi", "CQ/CQ", "", "APZTNC")[0],
-                         "UNPROTO APZTNC")
+        plan = build_aprs_tx_plan(":W5ABC    :hi", "CQ/CQ", "WIDE1-1", "APTNCS")
+        self.assertEqual(plan[0], "UNPROTO APTNCS VIA WIDE1-1")
+        self.assertEqual(build_aprs_tx_plan(":W5ABC    :hi", "CQ/CQ", "", "APTNCS")[0],
+                         "UNPROTO APTNCS")
         # Old callers get the old destination.
         self.assertEqual(build_aprs_tx_plan(":W5ABC    :hi", "CQ/CQ")[0], "UNPROTO APRS")
 
     def test_terminal_mode_sets_and_restores_unproto_with_the_tocall(self):
         serial = APRSTransactionFake()
         kam = make_kam(serial)
-        kam.aprs_tocall = "APZTNC"
+        kam.aprs_tocall = "APTNCS"
 
         execute_aprs_tx_transaction(kam, ":W5ABC    :hi{1", "WIDE1-1,WIDE2-1")
 
         written = [w.decode("ascii").strip("\r") for w in serial.written]
-        self.assertIn("UNPROTO APZTNC VIA WIDE1-1,WIDE2-1", written)
+        self.assertIn("UNPROTO APTNCS VIA WIDE1-1,WIDE2-1", written)
         self.assertEqual(serial.unproto, "CQ/CQ")      # restored afterwards
 
     def test_kiss_frame_destination_is_the_tocall(self):
         tnc = driver()
-        tnc.aprs_tocall = "APZTNC"
+        tnc.aprs_tocall = "APTNCS"
         from aprs_tx import _execute_aprs_tx_transaction
         _execute_aprs_tx_transaction(tnc, ":W5ABC    :hi", "")
         [(_, frame)] = frames_written(tnc.serial)
-        self.assertEqual(frame.destination, "APZTNC")
+        self.assertEqual(frame.destination, "APTNCS")
 
     def test_daemon_passes_it_to_the_driver_and_reports_it(self):
         kam = make_kam(APRSTransactionFake())
         daemon = KAMDaemon(kam, "/tmp/tocall-test.sock", station_callsign="N5BA",
-                           aprs_tocall="apztnc")
+                           aprs_tocall="aptncs")
         self.addCleanup(daemon.shutdown)
-        self.assertEqual(kam.aprs_tocall, "APZTNC")
-        self.assertEqual(daemon.dispatch("status", {})["aprs_tocall"], "APZTNC")
+        self.assertEqual(kam.aprs_tocall, "APTNCS")
+        self.assertEqual(daemon.dispatch("status", {})["aprs_tocall"], "APTNCS")
 
     def test_constructed_directly_the_daemon_keeps_aprs(self):
         kam = make_kam(APRSTransactionFake())
@@ -111,7 +110,7 @@ class TocallTests(unittest.TestCase):
         return captured["aprs_tocall"]
 
     def test_command_line_default_and_setting(self):
-        self.assertEqual(self.run_main({}), "APZTNC")
+        self.assertEqual(self.run_main({}), "APTNCS")
         self.assertEqual(self.run_main({"TNCSTATION_TOCALL": "aprs"}), "APRS")
 
     def test_bad_setting_is_refused_at_startup(self):
