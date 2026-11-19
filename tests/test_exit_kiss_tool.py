@@ -53,5 +53,43 @@ class RecognizeTests(unittest.TestCase):
         self.assertIsNone(tool.recognize(b"\xc0\x00garbage\xc0"))
 
 
+# Verbatim from Dave's OpenTNC (2026-11-19), already at cmd: (the daemon
+# had left KISS when it stopped): the exit bytes come straight back as
+# an echo, and the probe's CR submits them as a command.
+ECHO = b"\xc0\xff\xc0"
+OPENTNC_REJECT = (
+    b"\r\nUnknown command: \xc0\xff\xc0\r\n"
+    b"Type 'help' to list all commands\r\ncmd:"
+)
+
+
+class AssessTests(unittest.TestCase):
+    def test_opentnc_already_at_cmd(self):
+        self.assertEqual(tool.assess(ECHO, OPENTNC_REJECT), ("OpenTNC", False))
+
+    def test_opentnc_left_kiss(self):
+        self.assertEqual(tool.assess(OPENTNC_BANNER, b"\r\ncmd:"),
+                         ("OpenTNC", True))
+
+    def test_kam_xl_left_kiss(self):
+        self.assertEqual(tool.assess(b"[KAM-XL-1.0-HM$]\r\ncmd:", b"cmd:"),
+                         ("KAM-XL", True))
+
+    def test_echo_and_bare_prompt(self):
+        self.assertEqual(tool.assess(ECHO, b"\r\ncmd:"), ("TNC", False))
+
+    def test_opentnc_left_kiss_with_only_prompts(self):
+        # Verbatim from Dave's OpenTNC (2026-11-19): leaving KISS it
+        # answered with prompts only -- no banner, no echo.
+        reply = b"\\\r\n\rcmd:\r\n\r\n\rcmd:"
+        self.assertEqual(tool.assess(reply, b"\r\ncmd:"), ("TNC", True))
+
+    def test_still_stuck(self):
+        self.assertEqual(tool.assess(b"", b""), (None, True))
+
+    def test_opentnc_reject_line_alone_is_recognized(self):
+        self.assertEqual(tool.recognize(OPENTNC_REJECT), "OpenTNC")
+
+
 if __name__ == "__main__":
     unittest.main()
